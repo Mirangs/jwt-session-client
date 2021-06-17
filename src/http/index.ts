@@ -18,18 +18,20 @@ $api.interceptors.response.use(
     return config
   },
   async (err) => {
-    try {
-      const originalRequest = err.config
-      if (err.response.status === 401) {
+    const originalRequest = err.config
+    if (err.response.status === 401 && !err?.config?._isRetry) {
+      originalRequest._isRetry = true
+      try {
         const res = await axios.get<AuthResponse>(`${API_URL}/refresh`, {
           withCredentials: true,
         })
         localStorage.setItem('token', res.data.accessToken)
         return $api.request(originalRequest)
+      } catch (e) {
+        console.log(e)
       }
-    } catch (e) {
-      console.log(e)
     }
+    throw err
   }
 )
 
